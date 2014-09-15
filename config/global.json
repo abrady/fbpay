@@ -1,0 +1,14 @@
+{
+    "applications": {
+        "FBPay": {
+            "applicationId": "idQTCr0OJnUiHw6wNaKPdcBWhNPKXhvmnvJTBABv", 
+            "masterKey": "J9lDfiBI1R8mAYYRZWCmVgq262TYikaxLiYgbgOp"
+        }, 
+        "_default": {
+            "link": "FBPay"
+        }
+    }, 
+    "global": {
+        "parseVersion": "1.3.0"
+    }
+}

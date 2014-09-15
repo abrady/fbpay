@@ -1,0 +1,36 @@
+<html>
+  <head>
+    <title>Facebook Payments Example</title>
+    <div id="fb-root"></div>
+    <link href="/group.css" type="text/css" rel="stylesheet" />
+    <script src="JSXTransformer-0.10.0.js"></script>
+    <script src="react-0.10.0.js"></script>
+    <script>
+      fbconfig = { 
+        app_id: <%= app_id %>
+      }
+    </script>
+    <script type="text/jsx" src="item.js"></script>
+    <script type="text/javascript" id="facebook-jssdk" src="//connect.facebook.net/en_US/sdk.js"></script>
+    <script>
+      FB.init({
+        appId      : fbconfig.app_id,
+        status     : true,
+        version    : 'v2.0'
+      });
+
+      if(0) {
+        FB.login(function(response) {
+          if (response.authResponse) {
+            console.log('logged in ');
+          } else {
+            console.log('User cancelled login or did not fully authorize.');
+          }
+        });
+      }
+    </script>
+  </head>
+  <body>
+    <div id="item_area"></div>
+  </body>
+</html>
