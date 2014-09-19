@@ -26,7 +26,16 @@ itemOGResponse = function(req,res) {
   var id = req.query.id;
   console.log('og response for item id: '+id);
   // TODO: fetch the object on the server
-  res.render('item', { og_url: full_url });
+  var query = new Parse.Query("Item");
+  query.get(id, {
+    success: function(item) {
+      console.log('got item '+item.id);
+      res.render('item', { og_url: full_url, item: item });
+    },
+    error: function(object, error) {
+      res.end(JSON.stringify({error: error}));
+    }
+  });
 }
 app.get('/item', itemOGResponse);
 app.post('/item', itemOGResponse);
@@ -38,27 +47,25 @@ app.get('/itemScrape', function(req,res) {
   // if successful this response will contain a JSON object with what Facebook parsed from the OG item, e.g.:
   // {"url":"https://fbpay.parseapp.com/item","type":"product","title":"The Smashing Pack","image":[{"url":"http://www.friendsmash.com/images/pack_600.png"}],"description":"A smashing pack full of items!","updated_time":"2014-09-14T07:29:23+0000","data":{"price":[{"amount":2.99,"currency":"USD"},{"amount":1.99,"currency":"GBP"}]},"id":"721711664566619"} 
   
-  var ids = JSON.parse(req.query.ids);
-  ids.forEach(function(id) {
-    fb.graphRequest(
-      '/', 
-      { 
-        id:'https://fbpay.parseapp.com/item?id='+id,
-        scrape:true,
-        method:'post'
-      },
-      'get',
-      function(r) {
-        console.log('done: success');
-        res.end(JSON.stringify({res:'success'}));
-      },
-      function(err) {
-        console.log('done: fail');
-        res.statusCode = 400;
-        res.end(JSON.stringify(res));
-      }
-    );
-  });
+  var id = req.query.id;
+  fb.graphRequest(
+    '/', 
+    { 
+      id:'https://fbpay.parseapp.com/item?id='+id,
+      scrape:true,
+      method:'post'
+    },
+    'get',
+    function(r) {
+      console.log('done: success');
+      res.end(JSON.stringify({res:'success'}));
+    },
+    function(err) {
+      console.log('done: fail');
+      res.statusCode = 400;
+      res.end(JSON.stringify({res:false, error: err}));
+    }
+  );
 });
 
 rtu = function(req,res) {

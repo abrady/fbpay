@@ -5,18 +5,15 @@
      fb: http://ogp.me/ns/fb# 
      product: http://ogp.me/ns/product#">
     <meta property="og:type"                   content="og:product" />
-    <meta property="og:title"                  content="The Smashing Pack" />
-    <meta property="og:image"                  content="http://www.friendsmash.com/images/pack_600.png" />
-    <meta property="og:description"            content="A smashing pack full of items!" />
+    <meta property="og:title"                  content="<%=item.get('title')%>" />
+    <meta property="og:image"                  content="<%=item.get('image')%>" />
+    <meta property="og:description"            content="<%=item.get('description')%>" />
     <meta property="og:url"                    content="<%=og_url%>" />
-    <meta property="product:price:amount"      content="2.99"/>
     <meta property="product:price:currency"    content="USD"/>
-    <meta property="product:price:amount"      content="1.99"/>
-    <meta property="product:price:currency"    content="GBP"/>    
-    <title>Example OG Item</title>
+    <meta property="product:price:amount"      content="<%=item.get('USD')%>"/>
+    <title>OG Item</title>
   </head>
   <body>
-    <h1>Hello World From Item 4</h1>
-    <p><%= og_url %></p>
+    <h1>Product Info For Item <%=item.id%></h1>
   </body>
 </html>

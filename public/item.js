@@ -80,17 +80,28 @@ var Item = React.createClass({
     }
   },
   render: function() {
-    var item = { title: '', image: ''};
+    var item = { title: '', image: '', description: '', USD: ''};
+    var updated_at = '';
+    var update_button = '';
     if (this.state.item) {
       for(var k in item) {
         item[k] = this.state.item.get(k);
       }
       item.id = this.state.item.id;
+      
+      updated_at = "Last Saved: "+ this.state.item.updatedAt;
+      update_button = (
+        <div className="column small-6">
+          <SendToFacebook itemID={this.state.item.id} updatedAt={this.state.item.updatedAt}/>
+        </div>
+      );
     }
     // special property, set this explicitly always to make printing below easier
     if (!item.id) {
       item.id = '';
     }
+    
+
     return (
       <div>
         <div className="row">
@@ -108,34 +119,16 @@ var Item = React.createClass({
               <label>Description</label>
               <input type="text" name="description" value={item.description} />
             </div>
-            <div className="large-4 medium-4 columns">
-              <label>Url</label>
-              <input type="text" name="url" value={item.url} />
-            </div>
-            <div className="large-2 medium-2 columns">
+            <div className="large-2 medium-2 columns end">
               <label>USD</label>
-              <input type="text" name="USD" value={item.amount} onChange={this.handleChange} />
-            </div>
-            <div className="large-2 medium-2 columns">
-              <label>EUR</label>
-              <input type="text" name="EUR" value={item.amount} onChange={this.handleChange} />
-            </div>
-            <div className="large-2 medium-2 columns">
-              <label>HKD</label>
-              <input type="text" name="HKD" value={item.amount} onChange={this.handleChange} />
-            </div>
-            <div className="large-2 medium-2 columns">
-              <label>TRY</label>
-              <input type="text" name="TRY" value={item.amount} onChange={this.handleChange} />
+              <input type="text" name="USD" value={item.USD} onChange={this.handleChange} />
             </div>
           </div>
         </div>
         <div className="row">
           <div className="small-12 columns">
-            <div className="left">
-              <SendToFacebook items={[this.state.item]} />
-            </div>
-            <button className="small radius alert button right" onClick={this.deleteItem}>
+            {update_button}
+            <button className="column small small-2 radius alert button right" onClick={this.deleteItem}>
               Delete
             </button>
             <hr/>
@@ -149,7 +142,7 @@ var Item = React.createClass({
 var Items = React.createClass({
   queryItems: function() {
     var query = new Parse.Query(DB.Item);
-    query.find({
+    query.descending("createdAt").find({
       success: function(results) {
         this.setState({items:results});
       }.bind(this),
@@ -194,7 +187,6 @@ var Items = React.createClass({
             </button>
           </li>
         </ul>
-        <SendToFacebook items={this.state.items} />
       </div> 
     );
   }
@@ -203,15 +195,17 @@ var Items = React.createClass({
 var SendToFacebook = React.createClass({
   getInitialState: function() {
     return { 
-      scrapeResult: null
+      scrapeResult: null,
+      updatedAt: this.props.updatedAt
     };
   },
+  componentWillReceiveProps: function() {
+  },
   sendProductsToFb: function() {
-    var ids = this.props.items.forEach(function(item) { return item.id; });
     sendServerReq(
       'get',
-      'itemScrape',
-      {ids: ids}, // no payload
+      'itemScrape?id='+this.props.itemID,
+      {},
       function(res) { this.setState({scrapeResult: true});}.bind(this),
       function(err) { this.setState({scrapeResult: false});}.bind(this)
     );
@@ -235,14 +229,14 @@ var SendToFacebook = React.createClass({
 
       if (this.state.scrapeResult) {
         scrape_res = 
-          <div data-alert className="small success radius">
+          <div data-alert className="small success radius left">
             Updated on Facebook Successfully
             {close_x}
           </div>;
       } else {
         // TODO: link to actual problem item
         scrape_res = 
-          <div data-alert className="alert-box alert radius">
+          <div data-alert className="alert-box alert radius left">
             Scrape Failed. Check OG Debug Tool
             {close_x}
           </div>;
@@ -375,5 +369,7 @@ function sendServerReq(method, path, payload, res_cb, err_cb) {
 // note: on_logged_in() takes further actions
 var item_area = <ItemArea/>;
 React.renderComponent(item_area, $('item_area') );
-var pay_area = <PayArea/>;
-React.renderComponent(pay_area, $('pay_area') );
+
+// TODO: stick this on canvas app
+//var pay_area = <PayArea/>;
+//React.renderComponent(pay_area, $('pay_area') );
