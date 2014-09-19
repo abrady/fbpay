@@ -1,6 +1,7 @@
 var express = require('express');
 var fb = require('cloud/fb.js')
 var fbconfig = require('cloud/fbconfig.js');
+var parseconfig = require('cloud/parseconfig.js');
 
 // Global app configuration section
 var app = express();
@@ -11,7 +12,7 @@ app.use(express.bodyParser());    // Middleware for reading request body
 // I always forget these params:
 // req: http://nodejs.org/api/http.html#http_http_incomingmessage
 index = function(req, res) {
-  res.render('index', { app_id: fbconfig.app_id });
+  res.render('index', { fbconfig: { app_id: fbconfig.app_id}, parseconfig: parseconfig });
 }
 app.post('/', index);
 app.get('/', index);
@@ -22,7 +23,9 @@ app.get('/hello', function(req,res) {
 
 itemOGResponse = function(req,res) {
   var full_url = 'https://'+req.headers.host + req.url;
-  console.log('item url: '+full_url);
+  var id = req.query.id;
+  console.log('og response for item id: '+id);
+  // TODO: fetch the object on the server
   res.render('item', { og_url: full_url });
 }
 app.get('/item', itemOGResponse);
@@ -31,39 +34,44 @@ app.post('/item', itemOGResponse);
 // send all items to facebook for scraping
 // expects JSON response
 app.get('/itemScrape', function(req,res) {
-  console.log('item scrape');
+  console.log('item scrape: '+JSON.stringify(req.query));
   // if successful this response will contain a JSON object with what Facebook parsed from the OG item, e.g.:
   // {"url":"https://fbpay.parseapp.com/item","type":"product","title":"The Smashing Pack","image":[{"url":"http://www.friendsmash.com/images/pack_600.png"}],"description":"A smashing pack full of items!","updated_time":"2014-09-14T07:29:23+0000","data":{"price":[{"amount":2.99,"currency":"USD"},{"amount":1.99,"currency":"GBP"}]},"id":"721711664566619"} 
-  fb.graphRequest(
-    '/', 
-    { 
-      id:'https://fbpay.parseapp.com/item',
-      scrape:true,
-      method:'post'
-    },
-    'get',
-    function(r) {
-      console.log('done: success');
-      res.end({res:'success'});
-    },
-    function(err) {
-      console.log('done: fail');
-      res.statusCode = 400;
-      res.end(JSON.stringify(res));
-    }
-  );
+  
+  var ids = JSON.parse(req.query.ids);
+  ids.forEach(function(id) {
+    fb.graphRequest(
+      '/', 
+      { 
+        id:'https://fbpay.parseapp.com/item?id='+id,
+        scrape:true,
+        method:'post'
+      },
+      'get',
+      function(r) {
+        console.log('done: success');
+        res.end(JSON.stringify({res:'success'}));
+      },
+      function(err) {
+        console.log('done: fail');
+        res.statusCode = 400;
+        res.end(JSON.stringify(res));
+      }
+    );
+  });
 });
 
 rtu = function(req,res) {
   console.log('rtu call');
   // query: {"hub.mode":"subscribe","hub.challenge":"690749552","hub.verify_token":"shared_secret"}
-  console.log('hub: '+JSON.stringify(req.query));
-  res.end();
+  // console.log('hub: '+JSON.stringify(req.query));
+  res.end(req.query['hub.challenge']);
 }
 
 app.get('/rtu', rtu);
+app.post('/rtu', rtu);
 
 // TODO: dynamic pricing - https://developers.facebook.com/docs/howtos/payments/definingproducts#pricing_dynamic
-// scraping:GET https://graph.facebook.com/?id=OBJECT_URL&scrape=true&method=post
-
+// Order fulfillment: https://developers.facebook.com/docs/howtos/payments/fulfillment
+// 
 app.listen();
