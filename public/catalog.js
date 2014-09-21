@@ -1,42 +1,6 @@
 /** @jsx React.DOM */
 "use strict";
 
-// TODO:
-// restrict item editing to developers of app
-
-// ============================================================
-// Object 
-// ============================================================
-
-var DB = {
-  Item: Parse.Object.extend('Item'),
-  listeners: {},
-  addEventListener: function(event, func) {
-    if(!this.listeners[event]) {
-      this.listeners[event] = []
-    }
-    var listeners = this.listeners[event];
-    if (listeners.indexOf(func) > -1) {
-      console.error('duplicate function listener '+func);
-    }
-    listeners.push(func);
-  },
-  removeEventListener: function(event, func) {
-    var i = this.listeners.indexOf(func);
-    if(i < 0) {
-      console.error('removing unknown function '+func);
-    }
-    this.listeners.splice(i,1);
-  },
-  fireEvent : function(event, context) {
-    var listeners = this.listeners[event];
-    if (!listeners) {
-      return;
-    }
-    listeners.forEach(function(l) { l(event, context); });
-  }
-};
-
 // ============================================================
 // View
 // ============================================================
@@ -79,10 +43,20 @@ var Item = React.createClass({
       });
     }
   },
+  onItemOpenGraphID: function(og_id) {
+    var og = { id: og_id, updatedAt: new Date() };
+    this.state.item.set('og', og);
+    this.state.item.save();
+    this.forceUpdate();
+  },
   render: function() {
     var item = { title: '', image: '', description: '', USD: ''};
     var updated_at = '';
     var update_button = '';
+    var og_id_column_classnames = "label large-6 medium-6 column";
+    var og_id_column = <div className={'secondary '+og_id_column_classnames}>
+          Not Yet Published To Facebook
+    </div>;
     if (this.state.item) {
       for(var k in item) {
         item[k] = this.state.item.get(k);
@@ -91,16 +65,30 @@ var Item = React.createClass({
       
       updated_at = "Last Saved: "+ this.state.item.updatedAt;
       update_button = (
-        <div className="column small-6">
-          <SendToFacebook itemID={this.state.item.id} updatedAt={this.state.item.updatedAt}/>
+        <div className="column small-3">
+          <SendToFacebook parent={this} itemID={this.state.item.id} updatedAt={this.state.item.updatedAt}/>
         </div>
       );
+      
+      // TODO: indicate if unpublished changes have been made
+      var og = this.state.item.get('og');
+      if (og) {
+        var status_level = 'secondary';
+        var label = "Last Published to Facebook: ";
+        if(og.updatedAt < this.state.item.updatedAt) {
+          status_level='warning';
+          label = "Out Of Date. Last Published: ";
+        }
+        og_id_column = <div className={status_level+' '+og_id_column_classnames}>
+          <label>{label + " " + moment(og.updatedAt).fromNow()}</label>
+          {og.id}
+        </div>;
+      }
     }
     // special property, set this explicitly always to make printing below easier
     if (!item.id) {
       item.id = '';
-    }
-    
+    }    
 
     return (
       <div>
@@ -117,7 +105,7 @@ var Item = React.createClass({
             </div>
             <div className="large-4 medium-4 columns">
               <label>Description</label>
-              <input type="text" name="description" value={item.description} />
+              <input type="text" name="description" value={item.description} onChange={this.handleChange} />
             </div>
             <div className="large-2 medium-2 columns end">
               <label>USD</label>
@@ -128,11 +116,12 @@ var Item = React.createClass({
         <div className="row">
           <div className="small-12 columns">
             {update_button}
+            {og_id_column}
             <button className="column small small-2 radius alert button right" onClick={this.deleteItem}>
               Delete
             </button>
-            <hr/>
           </div>
+          <hr/>
         </div>
       </div>
     );
@@ -142,7 +131,7 @@ var Item = React.createClass({
 var Items = React.createClass({
   queryItems: function() {
     var query = new Parse.Query(DB.Item);
-    query.descending("createdAt").find({
+    query.ascending("createdAt").find({
       success: function(results) {
         this.setState({items:results});
       }.bind(this),
@@ -199,14 +188,16 @@ var SendToFacebook = React.createClass({
       updatedAt: this.props.updatedAt
     };
   },
-  componentWillReceiveProps: function() {
+  onScrapeResultSuccess: function(og_id) {
+    this.props.parent.onItemOpenGraphID(og_id);
+    this.setState({scrapeResult: true});
   },
   sendProductsToFb: function() {
     sendServerReq(
       'get',
       'itemScrape?id='+this.props.itemID,
       {},
-      function(res) { this.setState({scrapeResult: true});}.bind(this),
+      function(res) { this.onScrapeResultSuccess(res.ogID); }.bind(this),
       function(err) { this.setState({scrapeResult: false});}.bind(this)
     );
   },
@@ -227,13 +218,7 @@ var SendToFacebook = React.createClass({
             &times;
         </a>;
 
-      if (this.state.scrapeResult) {
-        scrape_res = 
-          <div data-alert className="small success radius left">
-            Updated on Facebook Successfully
-            {close_x}
-          </div>;
-      } else {
+      if (!this.state.scrapeResult) {
         // TODO: link to actual problem item
         scrape_res = 
           <div data-alert className="alert-box alert radius left">
@@ -285,91 +270,8 @@ var ItemArea = React.createClass({
   }
 });
 
-
-var PayArea = React.createClass({
-  payClicked: function() {
-    FB.ui(
-      {
-        method: 'pay',
-        action: 'purchaseitem',
-        product: 'http://fbpay.parseapp.com/item'
-        // quantity: 10,   // optional, defaults to 1
-        // request_id: ''  // optional, must be unique for each payment
-      },
-      this.payClickedCallback
-    );
-  },
-
-  payClickedCallback: function(res) {
-    console.log('pay clicked result'+JSON.stringify(res));
-  },
-
-  render: function() {
-    return (
-      <div className="row">
-        <div className="large-12 columns">
-          <div className="large-6 medium-6 columns">
-            <div className="payArea">
-              <button className="small radius button" onClick={this.payClicked}>Test Pay</button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-});
-
-// ============================================================
-// Data
-// ============================================================
- 
-function ge(e) {
-  return typeof e == 'string' ? document.getElementById(e) : e;
-};
-function $(args) {
-  var e = ge.apply(this, arguments);
-  if (!e) {
-    throw new Error('Tried to get element '+args+'but it is not present in the page. Use ge() instead.');
-  }
-  return e;
-}
-
-/**
-* Send a request to the server.
-* @param method: get, post, delete, etc
-* @param path: path on the server to hit
-* @param payload: dictionary of params to send, must be JSON.stringable
-*/
-function sendServerReq(method, path, payload, res_cb, err_cb) {
-  console.log("submitting, method: "+method+" path: "+path);
-  var xhr = new XMLHttpRequest();
-  xhr.onreadystatechange=function()
-  {
-    if (xhr.readyState==4)
-    {
-      if(xhr.status==200) {
-        console.log('sendServerReq('+method+'):'+xhr.responseText);
-        if (res_cb) {
-          res_cb(JSON.parse(xhr.responseText));
-        }
-      } else {
-        console.error('sendServerReq('+method+') failed'+xhr.responseText);
-        if (err_cb) {
-          err_cb(xhr.responseText ? JSON.parse(xhr.responseText) : {err:xhr.statusText});
-        }
-      }
-    }
-  };
-  xhr.open(method, path, true);
-  xhr.setRequestHeader("Content-type", "application/json");
-  xhr.send(JSON.stringify(payload));
-}
-
-// log the user in/ask permissions
-// note: on_logged_in() takes further actions
+// TODO: 
+// log the user in/ask permissions or else anyone can modify this catalog
+// 
 var item_area = <ItemArea/>;
 React.renderComponent(item_area, $('item_area') );
-
-// TODO: stick this on canvas app
-//var pay_area = <PayArea/>;
-//React.renderComponent(pay_area, $('pay_area') );

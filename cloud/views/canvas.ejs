@@ -1,0 +1,49 @@
+<html class="no-js">
+  <head>
+    <meta charset="utf-8" />
+    <title>Facebook Payments Example Canvas App</title>
+    <div id="fb-root"></div>
+    <link rel="stylesheet" href="/thirdparty/foundation/css/foundation.css" />
+    <script src="/thirdparty/foundation/js/vendor/modernizr.js"></script>
+    <script src="/thirdparty/moment.js"></script>
+    <script src="/thirdparty/JSXTransformer-0.10.0.js"></script>
+    <script src="/thirdparty/react-with-addons-0.11.1.js"></script>
+    <script src="https://www.parsecdn.com/js/parse-1.3.0.min.js"></script>
+    <script>
+      fbconfig = { 
+        app_id: '<%= fbconfig.app_id %>'
+      }
+      Parse.initialize("<%= parseconfig.app_id %>", "<%= parseconfig.javascript_key %>");
+    </script>
+    <script type="text/jsx" src="/util.js"></script>
+    <script type="text/jsx" src="/canvas.js"></script>
+    <script type="text/javascript" id="facebook-jssdk" src="//connect.facebook.net/en_US/sdk.js"></script>
+    <script>
+      FB.init({
+        appId      : fbconfig.app_id,
+        status     : true,
+        version    : 'v2.0'
+      });
+
+      FB.login(function(response) {
+        if (response.authResponse) {
+          console.log('logged in ');
+        } else {
+          console.log('User cancelled login or did not fully authorize.');
+        }
+      });
+    </script>
+  </head>
+  <body>
+    <div class="row">
+      <div class="large-12 columns">
+        <h1>Facebook Payments Canvas Example</h1>
+      </div>
+    </div>
+    <div class="row">
+      <div class="large-12 columns">
+        <div id="item_area"></div>
+      </div>
+    </div>
+  </body>
+</html>

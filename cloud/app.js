@@ -11,11 +11,11 @@ app.use(express.bodyParser());    // Middleware for reading request body
 
 // I always forget these params:
 // req: http://nodejs.org/api/http.html#http_http_incomingmessage
-index = function(req, res) {
-  res.render('index', { fbconfig: { app_id: fbconfig.app_id}, parseconfig: parseconfig });
+catalog = function(req, res) {
+  res.render('catalog', { fbconfig: { app_id: fbconfig.app_id}, parseconfig: parseconfig });
 }
-app.post('/', index);
-app.get('/', index);
+app.post('/', catalog);
+app.get('/', catalog);
 
 app.get('/hello', function(req,res) {
   res.render('hello', {message:'hello world!'});
@@ -57,11 +57,11 @@ app.get('/itemScrape', function(req,res) {
     },
     'get',
     function(r) {
-      console.log('done: success');
-      res.end(JSON.stringify({res:'success'}));
+      console.log('done: success '+JSON.stringify(r));
+      res.end(JSON.stringify({res:true,ogID:r.id}));
     },
     function(err) {
-      console.log('done: fail');
+      console.log('done: fail'+JSON.stringify(err));
       res.statusCode = 400;
       res.end(JSON.stringify({res:false, error: err}));
     }
@@ -81,4 +81,15 @@ app.post('/rtu', rtu);
 // TODO: dynamic pricing - https://developers.facebook.com/docs/howtos/payments/definingproducts#pricing_dynamic
 // Order fulfillment: https://developers.facebook.com/docs/howtos/payments/fulfillment
 // 
+
+
+// canvas endpoint
+// ============================================================
+
+function canvas(req, res) {
+  res.render('canvas', { fbconfig: { app_id: fbconfig.app_id}, parseconfig: parseconfig });
+}
+app.post('/canvas', canvas);
+app.get('/canvas', canvas);
+
 app.listen();
