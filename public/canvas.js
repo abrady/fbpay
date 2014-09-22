@@ -2,13 +2,24 @@
 "use strict";
 
 var Item = React.createClass({
+  getInitialState: function() {
+    return { payResult: null };
+  },
   buyItem: function() {
     FB.ui({
       method: 'pay',
       action: 'purchaseitem',
       product: 'https://fbpay.parseapp.com/item?id='+this.props.item.id
     },
-      function(res) {console.log("buyItem result:"+JSON.stringify(res));}
+    // result:{"payment_id":653080934806183,"amount":"0.01","currency":"USD","quantity":"1","status":"completed","signed_request":"OeoWVbMD4RxtKyfQmqsHbcHsurFgroSO4bqYT1sygEM.eyJhbGdvcml0aG0iOiJITUFDLVNIQTI1NiIsImFtb3VudCI6IjAuMDEiLCJjdXJyZW5jeSI6IlVTRCIsImlzc3VlZF9hdCI6MTQxMTQwNjMxOSwicGF5bWVudF9pZCI6NjUzMDgwOTM0ODA2MTgzLCJxdWFudGl0eSI6IjEiLCJzdGF0dXMiOiJjb21wbGV0ZWQifQ"} 
+      function(res) {
+        console.log("buyItem result:"+JSON.stringify(res));
+        if (res.error_code) {
+          this.setState({payResult: res.error_message});
+        } else {
+          this.setState({payResult: "success, id: "+res.payment_id});
+        }
+      }.bind(this)
     );
   },
   render: function() {
@@ -46,6 +57,14 @@ var Item = React.createClass({
             </div>
           </div>
         </div>
+        <div className="row">
+          <div className="large-14 columns">
+            <div className="label secondary column">
+              Pay Result: {this.state.payResult}
+            </div>
+          </div>
+        </div>
+        <hr/>
       </div>
     );
   }
